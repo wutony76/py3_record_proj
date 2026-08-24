@@ -126,6 +126,24 @@
     }
     .msg-cell { max-width: 320px; word-break: break-word; }
 
+    .data-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #eef2ff;
+      color: #4f46e5;
+      border: none;
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 6px;
+      transition: background 0.15s;
+    }
+    .data-toggle:hover { background: #e0e7ff; }
+    .data-body { display: none; }
+    .data-body.open { display: block; }
     .data-cell pre {
       background: #f4f6f9;
       border-radius: 6px;
@@ -135,6 +153,7 @@
       max-width: 560px;
       white-space: pre-wrap;
       word-break: break-all;
+      margin: 0;
     }
 
     .ss-list { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -243,9 +262,19 @@
     return `/data/screenshots/${date}/${filename}`;
   }
 
+  let _dataId = 0;
   function renderData(data) {
     if (!data) return '—';
-    return `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+    const id = `data-${_dataId++}`;
+    return `
+      <button class="data-toggle" onclick="
+        const b=document.getElementById('${id}');
+        const open=b.classList.toggle('open');
+        this.textContent=open?'▲ 收起':'▼ 展開';
+      ">▼ 展開</button>
+      <div class="data-body" id="${id}">
+        <pre>${JSON.stringify(data, null, 2)}</pre>
+      </div>`;
   }
 
   function renderScreenshots(date, files) {
