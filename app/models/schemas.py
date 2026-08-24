@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -9,6 +9,7 @@ class LogRequest(BaseModel):
     timestamp: Optional[datetime] = None
     screenshot: bool = False
     url: Optional[List[str]] = None
+    data: Optional[Dict[str, Any]] = None
 
 
 class LogResponse(BaseModel):

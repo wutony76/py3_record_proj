@@ -19,7 +19,7 @@ async def create_log(payload: LogRequest) -> LogResponse:
         screenshot_paths = await screenshot.capture(ts, payload.url)
         screenshot_filenames = [p.name for p in screenshot_paths]
 
-    log_path = await log_writer.write_log(ts, payload.message, screenshot_filenames)
+    log_path = await log_writer.write_log(ts, payload.message, screenshot_filenames, payload.data)
 
     return LogResponse(
         status="ok",
