@@ -1,0 +1,17 @@
+from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel
+
+
+class LogRequest(BaseModel):
+    message: str
+    timestamp: Optional[datetime] = None
+    screenshot: bool = False
+    url: Optional[str] = None
+
+
+class LogResponse(BaseModel):
+    status: str
+    log_file: str
+    screenshot_file: Optional[str] = None
