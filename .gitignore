@@ -2,7 +2,4 @@ __pycache__/
 *.pyc
 .venv/
 venv/
-data/logs/*
-!data/logs/.gitkeep
-data/screenshots/*
-!data/screenshots/.gitkeep
+data/
