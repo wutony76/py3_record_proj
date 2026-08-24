@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log Viewer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    header h1 { font-size: 1.2rem; font-weight: 600; flex: 1; }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    select, input[type="date"] {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 0.9rem;
+      background: #fff;
+      cursor: pointer;
+    }
+    button {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: none;
+      background: #4f8ef7;
+      color: #fff;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #3a7de0; }
+
+    .badge-auto {
+      font-size: 0.75rem;
+      background: #22c55e;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    main { padding: 24px; }
+
+    .summary {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 14px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      min-width: 120px;
+    }
+    .card .num { font-size: 1.6rem; font-weight: 700; color: #4f8ef7; }
+    .card .label { font-size: 0.8rem; color: #888; margin-top: 2px; }
+
+    .table-wrap {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    thead tr { background: #f8f9fb; }
+    th {
+      padding: 12px 14px;
+      text-align: left;
+      font-weight: 600;
+      color: #555;
+      border-bottom: 1px solid #e8eaed;
+      white-space: nowrap;
+    }
+    td {
+      padding: 11px 14px;
+      border-bottom: 1px solid #f0f2f5;
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbff; }
+
+    .time-cell { color: #666; white-space: nowrap; font-family: monospace; }
+    .bucket-cell {
+      white-space: nowrap;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #888;
+    }
+    .msg-cell { max-width: 320px; word-break: break-word; }
+
+    .data-cell pre {
+      background: #f4f6f9;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      max-width: 280px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .ss-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .ss-thumb {
+      width: 72px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 5px;
+      border: 1px solid #e0e0e0;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .ss-thumb:hover { transform: scale(1.06); }
+
+    .empty {
+      text-align: center;
+      padding: 60px 0;
+      color: #aaa;
+      font-size: 1rem;
+    }
+
+    /* lightbox */
+    #lightbox {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.75);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    #lightbox.open { display: flex; }
+    #lightbox img {
+      max-width: 92vw;
+      max-height: 90vh;
+      border-radius: 8px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.5);
+    }
+    #lightbox-close {
+      position: fixed;
+      top: 16px; right: 20px;
+      color: #fff;
+      font-size: 2rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    #status { font-size: 0.8rem; color: #aaa; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Log Viewer</h1>
+  <div class="controls">
+    <input type="date" id="datePicker" />
+    <button onclick="loadLogs()">載入</button>
+    <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
+      <input type="checkbox" id="autoRefresh" onchange="toggleAuto()" />
+      自動更新
+      <span class="badge-auto" id="autoLabel" style="display:none">ON</span>
+    </label>
+    <span id="status"></span>
+  </div>
+</header>
+
+<main>
+  <div class="summary" id="summary"></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>時間</th>
+          <th>區間</th>
+          <th>訊息</th>
+          <th>Data</th>
+          <th>截圖</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty" style="display:none">目前沒有資料</div>
+  </div>
+</main>
+
+<div id="lightbox">
+  <span id="lightbox-close" onclick="closeLightbox()">&#x2715;</span>
+  <img id="lightbox-img" src="" />
+</div>
+
+<script>
+  const API = '';
+  let autoTimer = null;
+
+  async function fetchDates() {
+    const r = await fetch(`${API}/api/logs/dates`);
+    return r.ok ? r.json() : [];
+  }
+
+  async function fetchLogs(date) {
+    const r = await fetch(`${API}/api/logs/${date}`);
+    return r.ok ? r.json() : { entries: [] };
+  }
+
+  function screenshotUrl(date, filename) {
+    return `/data/screenshots/${date}/${filename}`;
+  }
+
+  function renderData(data) {
+    if (!data) return '—';
+    return `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+  }
+
+  function renderScreenshots(date, files) {
+    if (!files || files.length === 0) return '—';
+    return `<div class="ss-list">${files.map(f =>
+      `<img class="ss-thumb" src="${screenshotUrl(date, f)}"
+            title="${f}"
+            onclick="openLightbox('${screenshotUrl(date, f)}')" />`
+    ).join('')}</div>`;
+  }
+
+  function renderTable(date, entries) {
+    const tbody = document.getElementById('tbody');
+    const empty = document.getElementById('empty');
+
+    if (!entries.length) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    tbody.innerHTML = entries.map(e => `
+      <tr>
+        <td class="time-cell">${e.time}</td>
+        <td class="bucket-cell">${e.bucket}</td>
+        <td class="msg-cell">${escHtml(e.message || '')}</td>
+        <td class="data-cell">${renderData(e.data)}</td>
+        <td>${renderScreenshots(date, e.screenshots)}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderSummary(entries) {
+    const total = entries.length;
+    const withData = entries.filter(e => e.data).length;
+    const withSS = entries.filter(e => e.screenshots && e.screenshots.length).length;
+    document.getElementById('summary').innerHTML = `
+      <div class="card"><div class="num">${total}</div><div class="label">筆 Log</div></div>
+      <div class="card"><div class="num">${withData}</div><div class="label">含 Data</div></div>
+      <div class="card"><div class="num">${withSS}</div><div class="label">含截圖</div></div>
+    `;
+  }
+
+  async function loadLogs() {
+    const date = document.getElementById('datePicker').value;
+    if (!date) return;
+    document.getElementById('status').textContent = '載入中…';
+    try {
+      const { entries } = await fetchLogs(date);
+      renderSummary(entries);
+      renderTable(date, entries);
+      document.getElementById('status').textContent = `更新於 ${new Date().toLocaleTimeString()}`;
+    } catch {
+      document.getElementById('status').textContent = '載入失敗';
+    }
+  }
+
+  function toggleAuto() {
+    const on = document.getElementById('autoRefresh').checked;
+    document.getElementById('autoLabel').style.display = on ? '' : 'none';
+    if (on) {
+      autoTimer = setInterval(loadLogs, 15000);
+    } else {
+      clearInterval(autoTimer);
+    }
+  }
+
+  function openLightbox(src) {
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('open');
+  }
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+  }
+  document.getElementById('lightbox').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeLightbox();
+  });
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // 初始化：取得有資料的日期，預設最新
+  (async () => {
+    const dates = await fetchDates();
+    const picker = document.getElementById('datePicker');
+    if (dates.length) {
+      picker.value = dates[0];
+      loadLogs();
+    } else {
+      const today = new Date().toISOString().slice(0, 10);
+      picker.value = today;
+    }
+  })();
+</script>
+</body>
+</html>

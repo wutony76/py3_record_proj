@@ -1,11 +1,23 @@
 from datetime import datetime
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 
 from ..models.schemas import LogRequest, LogResponse
-from ..services import log_writer, screenshot
+from ..services import log_reader, log_writer, screenshot
 
 router = APIRouter()
+
+
+@router.get("/logs/dates")
+async def get_dates() -> List[str]:
+    return log_reader.list_dates()
+
+
+@router.get("/logs/{date}")
+async def get_logs(date: str) -> Dict[str, Any]:
+    entries = log_reader.read_logs(date)
+    return {"date": date, "entries": entries}
 
 
 @router.post("/log", response_model=LogResponse)
