@@ -23,6 +23,9 @@ async def get_logs(date: str) -> Dict[str, Any]:
 @router.post("/log", response_model=LogResponse)
 async def create_log(payload: LogRequest, background_tasks: BackgroundTasks) -> LogResponse:
     ts = payload.timestamp or datetime.now()
+    # 若 client 傳入帶時區的 timestamp（如 ISO UTC），轉為本機 naive datetime
+    if ts.tzinfo is not None:
+        ts = ts.astimezone().replace(tzinfo=None)
 
     if payload.screenshot and not payload.url:
         raise HTTPException(status_code=400, detail="url is required when screenshot=true")
