@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class LogRequest(BaseModel):
@@ -11,6 +11,13 @@ class LogRequest(BaseModel):
     screenshot: bool = False
     url: Optional[List[str]] = None
     data: Optional[Dict[str, Any]] = None
+
+    @field_validator("url", mode="before")
+    @classmethod
+    def normalize_url(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return [v]
+        return v
 
 
 class LogResponse(BaseModel):
