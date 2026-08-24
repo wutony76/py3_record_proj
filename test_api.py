@@ -60,10 +60,28 @@ def test_custom_timestamp():
     print("PASS\n")
 
 
+def test_log_with_data():
+    print("=== 測試 5：帶 data 欄位 ===")
+    resp = requests.post(f"{BASE}/api/log", json={
+        "message": "data 測試",
+        "data": {
+            "job_id": 123,
+            "status": "success",
+            "count": 42,
+        },
+    })
+    print("status_code:", resp.status_code)
+    print("response:   ", resp.json())
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "ok"
+    print("PASS\n")
+
+
 if __name__ == "__main__":
     test_log_only()
     test_custom_timestamp()
     test_screenshot_missing_url()
+    test_log_with_data()
     # 截圖測試需要 Playwright chromium，視需求開啟
     test_log_with_screenshot()
     print("所有測試通過")
