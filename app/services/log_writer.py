@@ -42,3 +42,14 @@ async def write_log(
             f.write(line)
 
     return file_path
+
+
+async def append_screenshot_log(ts: datetime, log_path: Path, screenshot_files: List[str]) -> None:
+    """截圖背景任務完成後，補寫一行記錄到原本的 log 檔。"""
+    files_str = ", ".join(screenshot_files)
+    line = f"[{ts:%H:%M:%S}] [screenshots ready: {files_str}]\n"
+
+    lock = await _lock_for(log_path)
+    async with lock:
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(line)

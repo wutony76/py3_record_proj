@@ -49,10 +49,15 @@ async def _capture_one(ts: datetime, url: str, index: int) -> Path:
     return file_path
 
 
-async def capture(ts: datetime, urls: List[str]) -> List[Path]:
-    """對多個 URL 依序截圖，回傳 Path 列表。"""
+async def capture_and_append_log(ts: datetime, urls: List[str], log_path: Path) -> None:
+    """背景任務：對多個 URL 依序截圖，完成後將截圖檔名 append 到 log 檔。"""
+    from ..services.log_writer import append_screenshot_log
+
     results: List[Path] = []
     for i, url in enumerate(urls):
         path = await _capture_one(ts, url, i)
         results.append(path)
-    return results
+
+    if results:
+        filenames = [p.name for p in results]
+        await append_screenshot_log(ts, log_path, filenames)
