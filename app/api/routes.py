@@ -12,17 +12,17 @@ router = APIRouter()
 async def create_log(payload: LogRequest) -> LogResponse:
     ts = payload.timestamp or datetime.now()
 
-    screenshot_filename = None
+    screenshot_filenames = None
     if payload.screenshot:
         if not payload.url:
             raise HTTPException(status_code=400, detail="url is required when screenshot=true")
-        screenshot_path = await screenshot.capture(ts, payload.url)
-        screenshot_filename = screenshot_path.name
+        screenshot_paths = await screenshot.capture(ts, payload.url)
+        screenshot_filenames = [p.name for p in screenshot_paths]
 
-    log_path = await log_writer.write_log(ts, payload.message, screenshot_filename)
+    log_path = await log_writer.write_log(ts, payload.message, screenshot_filenames)
 
     return LogResponse(
         status="ok",
         log_file=log_path.name,
-        screenshot_file=screenshot_filename,
+        screenshot_files=screenshot_filenames,
     )

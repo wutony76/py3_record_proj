@@ -1,11 +1,14 @@
+import asyncio
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from playwright.async_api import Browser, async_playwright
 
 from ..core.config import SCREENSHOT_DIR
 from ..core.time_bucket import bucket_day_dir, bucket_filename
+
+WAIT_AFTER_LOAD_S = 20
 
 _playwright = None
 _browser: Optional[Browser] = None
@@ -25,20 +28,31 @@ async def stop_browser() -> None:
         await _playwright.stop()
 
 
-async def capture(ts: datetime, url: str) -> Path:
+async def _capture_one(ts: datetime, url: str, index: int) -> Path:
+    """載入單一 URL，等待 WAIT_AFTER_LOAD_S 秒後截圖。"""
     if _browser is None:
         raise RuntimeError("Browser is not started")
 
     day_dir = SCREENSHOT_DIR / bucket_day_dir(ts)
     day_dir.mkdir(parents=True, exist_ok=True)
     bucket = bucket_filename(ts).removesuffix(".txt")
-    file_path = day_dir / f"{bucket}_{ts:%H%M%S}.png"
+    file_path = day_dir / f"{bucket}_{ts:%H%M%S}_{index}.png"
 
     page = await _browser.new_page()
     try:
         await page.goto(url, wait_until="networkidle")
+        await asyncio.sleep(WAIT_AFTER_LOAD_S)
         await page.screenshot(path=str(file_path), full_page=True)
     finally:
         await page.close()
 
     return file_path
+
+
+async def capture(ts: datetime, urls: List[str]) -> List[Path]:
+    """對多個 URL 依序截圖，回傳 Path 列表。"""
+    results: List[Path] = []
+    for i, url in enumerate(urls):
+        path = await _capture_one(ts, url, i)
+        results.append(path)
+    return results

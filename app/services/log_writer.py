@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from ..core.config import LOG_DIR
 from ..core.time_bucket import bucket_day_dir, bucket_filename
@@ -17,14 +17,15 @@ async def _lock_for(path: Path) -> asyncio.Lock:
         return _locks[path]
 
 
-async def write_log(ts: datetime, message: str, screenshot_file: Optional[str]) -> Path:
+async def write_log(ts: datetime, message: str, screenshot_files: Optional[List[str]]) -> Path:
     day_dir = LOG_DIR / bucket_day_dir(ts)
     day_dir.mkdir(parents=True, exist_ok=True)
     file_path = day_dir / bucket_filename(ts)
 
     line = f"[{ts:%H:%M:%S}] {message}"
-    if screenshot_file:
-        line += f" [screenshot: {screenshot_file}]"
+    if screenshot_files:
+        files_str = ", ".join(screenshot_files)
+        line += f" [screenshots: {files_str}]"
     line += "\n"
 
     lock = await _lock_for(file_path)
