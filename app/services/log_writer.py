@@ -32,7 +32,8 @@ async def write_log(
     line = f"[{ts:%H:%M:%S}]"
     if tag:
         line += f" [{tag}]"
-    line += f" {message}"
+    if message:
+        line += f" {message}"
     if data:
         line += f" [data: {json.dumps(data, ensure_ascii=False)}]"
     if screenshot_files:
