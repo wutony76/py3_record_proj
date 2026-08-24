@@ -296,8 +296,9 @@
     document.getElementById('status').textContent = '載入中…';
     try {
       const { entries } = await fetchLogs(date);
+      const sorted = [...entries].reverse();
       renderSummary(entries);
-      renderTable(date, entries);
+      renderTable(date, sorted);
       document.getElementById('status').textContent = `更新於 ${new Date().toLocaleTimeString()}`;
     } catch {
       document.getElementById('status').textContent = '載入失敗';
