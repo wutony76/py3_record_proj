@@ -17,7 +17,7 @@ playwright install chromium
 ## 執行
 
 ```bash
-uvicorn app.main:app --reload
+python3 -m uvicorn app.main:app --reload
 ```
 
 ## API
