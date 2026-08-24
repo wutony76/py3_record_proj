@@ -1,7 +1,7 @@
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..core.config import LOG_DIR
 
@@ -10,9 +10,38 @@ _LINE_RE = re.compile(
     r"(?:\s+\[(?P<tag>[^\]]+)\])?"
     r"\s+(?P<rest>.+)$"
 )
-_DATA_RE = re.compile(r"\[data:\s*(?P<json>\{.*?\})\]")
+_DATA_PREFIX_RE = re.compile(r"\[data:\s*")
 _SCREENSHOTS_RE = re.compile(r"\[screenshots:\s*(?P<files>[^\]]+)\]")
 _SCREENSHOTS_READY_RE = re.compile(r"\[screenshots ready:\s*(?P<files>[^\]]+)\]")
+
+
+def _extract_json_block(text: str, prefix_re: re.Pattern) -> Tuple[Optional[Any], str]:
+    """找出 [data: {...}] 中的完整 JSON（支援巢狀括號），回傳 (parsed_value, text_without_block)。"""
+    m = prefix_re.search(text)
+    if not m:
+        return None, text
+
+    start = m.end()
+    depth = 0
+    i = start
+    while i < len(text):
+        if text[i] == '{':
+            depth += 1
+        elif text[i] == '}':
+            depth -= 1
+            if depth == 0:
+                json_str = text[start:i + 1]
+                # i+1 之後可能緊跟著 ']' 關閉 [data: ...]，需要一起移除
+                end = i + 1
+                if end < len(text) and text[end] == ']':
+                    end += 1
+                remainder = text[:m.start()] + text[end:]
+                try:
+                    return json.loads(json_str), remainder
+                except json.JSONDecodeError:
+                    return None, text
+        i += 1
+    return None, text
 
 
 def _parse_line(raw: str) -> Optional[Dict[str, Any]]:
@@ -33,14 +62,7 @@ def _parse_line(raw: str) -> Optional[Dict[str, Any]]:
             "screenshots_ready": [f.strip() for f in ready_m.group("files").split(",")],
         }
 
-    data_val: Optional[Dict] = None
-    data_m = _DATA_RE.search(rest)
-    if data_m:
-        try:
-            data_val = json.loads(data_m.group("json"))
-        except json.JSONDecodeError:
-            pass
-        rest = _DATA_RE.sub("", rest)
+    data_val, rest = _extract_json_block(rest, _DATA_PREFIX_RE)
 
     screenshots: List[str] = []
     ss_m = _SCREENSHOTS_RE.search(rest)
