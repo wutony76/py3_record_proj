@@ -23,12 +23,16 @@ async def write_log(
     message: str,
     screenshot_files: Optional[List[str]],
     data: Optional[Dict[str, Any]] = None,
+    tag: Optional[str] = None,
 ) -> Path:
     day_dir = LOG_DIR / bucket_day_dir(ts)
     day_dir.mkdir(parents=True, exist_ok=True)
     file_path = day_dir / bucket_filename(ts)
 
-    line = f"[{ts:%H:%M:%S}] {message}"
+    line = f"[{ts:%H:%M:%S}]"
+    if tag:
+        line += f" [{tag}]"
+    line += f" {message}"
     if data:
         line += f" [data: {json.dumps(data, ensure_ascii=False)}]"
     if screenshot_files:

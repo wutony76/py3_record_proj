@@ -6,8 +6,9 @@ from typing import Any, Dict, List, Optional
 from ..core.config import LOG_DIR
 
 _LINE_RE = re.compile(
-    r"^\[(?P<time>\d{2}:\d{2}:\d{2})\]\s+"
-    r"(?P<rest>.+)$"
+    r"^\[(?P<time>\d{2}:\d{2}:\d{2})\]"
+    r"(?:\s+\[(?P<tag>[^\]]+)\])?"
+    r"\s+(?P<rest>.+)$"
 )
 _DATA_RE = re.compile(r"\[data:\s*(?P<json>\{.*?\})\]")
 _SCREENSHOTS_RE = re.compile(r"\[screenshots:\s*(?P<files>[^\]]+)\]")
@@ -20,6 +21,7 @@ def _parse_line(raw: str) -> Optional[Dict[str, Any]]:
         return None
 
     time_str = m.group("time")
+    tag_str = m.group("tag")
     rest = m.group("rest")
 
     # 截圖 ready 補行（不是主要 log 條目）
@@ -51,6 +53,7 @@ def _parse_line(raw: str) -> Optional[Dict[str, Any]]:
     return {
         "time": time_str,
         "type": "log",
+        "tag": tag_str,
         "message": message,
         "data": data_val,
         "screenshots": screenshots,

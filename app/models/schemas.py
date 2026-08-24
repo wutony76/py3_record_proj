@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 class LogRequest(BaseModel):
     message: str
+    tag: Optional[str] = None
     timestamp: Optional[datetime] = None
     screenshot: bool = False
     url: Optional[List[str]] = None

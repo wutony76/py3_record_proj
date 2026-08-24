@@ -113,6 +113,17 @@
       font-size: 0.8rem;
       color: #888;
     }
+    .tag-cell { white-space: nowrap; }
+    .tag-badge {
+      display: inline-block;
+      background: #eef2ff;
+      color: #4f46e5;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-family: monospace;
+    }
     .msg-cell { max-width: 320px; word-break: break-word; }
 
     .data-cell pre {
@@ -192,15 +203,16 @@
   <div class="summary" id="summary"></div>
   <div class="table-wrap">
     <table>
-      <thead>
-        <tr>
-          <th>時間</th>
-          <th>區間</th>
-          <th>訊息</th>
-          <th>Data</th>
-          <th>截圖</th>
-        </tr>
-      </thead>
+        <thead>
+          <tr>
+            <th>時間</th>
+            <th>區間</th>
+            <th>Tag</th>
+            <th>訊息</th>
+            <th>Data</th>
+            <th>截圖</th>
+          </tr>
+        </thead>
       <tbody id="tbody"></tbody>
     </table>
     <div class="empty" id="empty" style="display:none">目前沒有資料</div>
@@ -259,6 +271,7 @@
       <tr>
         <td class="time-cell">${e.time}</td>
         <td class="bucket-cell">${e.bucket}</td>
+        <td class="tag-cell">${e.tag ? `<span class="tag-badge">${escHtml(e.tag)}</span>` : '—'}</td>
         <td class="msg-cell">${escHtml(e.message || '')}</td>
         <td class="data-cell">${renderData(e.data)}</td>
         <td>${renderScreenshots(date, e.screenshots)}</td>
