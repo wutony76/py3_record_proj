@@ -124,7 +124,7 @@
       border-radius: 999px;
       font-family: monospace;
     }
-    .msg-cell { max-width: 320px; word-break: break-word; }
+    .msg-cell { max-width: 320px; word-break: break-word; white-space: pre-wrap; font-family: monospace; font-size: 0.82rem; }
 
     .data-btn-row {
       display: flex;
@@ -371,7 +371,7 @@
         <td class="time-cell">${e.time}</td>
         <td class="bucket-cell">${e.bucket}</td>
         <td class="tag-cell">${e.tag ? `<span class="tag-badge">${escHtml(e.tag)}</span>` : '—'}</td>
-        <td class="msg-cell">${escHtml(e.anal || e.message || '')}</td>
+        <td class="msg-cell">${renderAnal(e.anal) || escHtml(e.message || '')}</td>
         <td class="data-cell">${renderData(e.data)}</td>
         <td>${renderScreenshots(date, e.screenshots)}</td>
       </tr>
@@ -454,6 +454,13 @@
 
   function escHtml(s) {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderAnal(s) {
+    if (!s) return '';
+    // 移除 console 樣式標記 %c，還原字面 \n
+    const cleaned = s.replace(/%c/g, '').replace(/\\n/g, '\n');
+    return escHtml(cleaned);
   }
 
   // 初始化：取得有資料的日期，預設最新

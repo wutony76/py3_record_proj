@@ -68,7 +68,8 @@ def _parse_line(raw: str) -> Optional[Dict[str, Any]]:
     anal_val: Optional[str] = None
     anal_m = _ANAL_RE.search(rest)
     if anal_m:
-        anal_val = anal_m.group("val").strip()
+        # 還原字面 \n 為真實換行
+        anal_val = anal_m.group("val").strip().replace("\\n", "\n")
         rest = _ANAL_RE.sub("", rest)
 
     screenshots: List[str] = []

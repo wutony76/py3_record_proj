@@ -36,7 +36,9 @@ async def write_log(
     if message:
         line += f" {message}"
     if anal:
-        line += f" [anal: {anal}]"
+        # 將換行轉為字面 \n，確保 log 行為單行
+        anal_escaped = anal.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n")
+        line += f" [anal: {anal_escaped}]"
     if data:
         line += f" [data: {json.dumps(data, ensure_ascii=False)}]"
     if screenshot_files:
