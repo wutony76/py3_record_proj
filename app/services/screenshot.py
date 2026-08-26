@@ -12,12 +12,15 @@ WAIT_AFTER_LOAD_S = 20
 
 _playwright = None
 _browser: Optional[Browser] = None
+# 同一時間最多 1 個截圖任務，避免大量並發壓垮 browser
+_semaphore: Optional[asyncio.Semaphore] = None
 
 
 async def start_browser() -> None:
-    global _playwright, _browser
+    global _playwright, _browser, _semaphore
     _playwright = await async_playwright().start()
     _browser = await _playwright.chromium.launch(headless=True)
+    _semaphore = asyncio.Semaphore(1)
 
 
 async def stop_browser() -> None:
@@ -50,14 +53,24 @@ async def _capture_one(ts: datetime, url: str, index: int) -> Path:
 
 
 async def capture_and_append_log(ts: datetime, urls: List[str], log_path: Path) -> None:
-    """背景任務：對多個 URL 依序截圖，完成後將截圖檔名 append 到 log 檔。"""
+    """背景任務：對多個 URL 依序截圖，完成後將截圖檔名 append 到 log 檔。
+    使用 semaphore 確保同一時間只有一個任務在跑，避免並發壓垮 browser。
+    """
     from ..services.log_writer import append_screenshot_log
 
-    results: List[Path] = []
-    for i, url in enumerate(urls):
-        path = await _capture_one(ts, url, i)
-        results.append(path)
+    sem = _semaphore
+    if sem is None:
+        return
 
-    if results:
-        filenames = [p.name for p in results]
-        await append_screenshot_log(ts, log_path, filenames)
+    async with sem:
+        results: List[Path] = []
+        for i, url in enumerate(urls):
+            try:
+                path = await _capture_one(ts, url, i)
+                results.append(path)
+            except Exception:
+                pass  # 單一 URL 失敗不中斷整批
+
+        if results:
+            filenames = [p.name for p in results]
+            await append_screenshot_log(ts, log_path, filenames)
