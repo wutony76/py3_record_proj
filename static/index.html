@@ -126,6 +126,11 @@
     }
     .msg-cell { max-width: 320px; word-break: break-word; }
 
+    .data-btn-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
     .data-toggle {
       display: inline-flex;
       align-items: center;
@@ -138,10 +143,25 @@
       font-size: 0.78rem;
       font-weight: 600;
       cursor: pointer;
-      margin-bottom: 6px;
       transition: background 0.15s;
     }
     .data-toggle:hover { background: #e0e7ff; }
+    .data-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #f0fdf4;
+      color: #16a34a;
+      border: none;
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .data-copy:hover { background: #dcfce7; }
+    .data-copy.copied { background: #16a34a; color: #fff; }
     .data-body { display: none; }
     .data-body.open { display: block; }
     .data-cell pre {
@@ -263,15 +283,28 @@
   }
 
   let _dataId = 0;
+  const _dataStore = {};
+
   function renderData(data) {
     if (!data) return '—';
     const id = `data-${_dataId++}`;
+    _dataStore[id] = JSON.stringify(data, null, 2);
     return `
-      <button class="data-toggle" onclick="
-        const b=document.getElementById('${id}');
-        const open=b.classList.toggle('open');
-        this.textContent=open?'▲ 收起':'▼ 展開';
-      ">▼ 展開</button>
+      <div class="data-btn-row">
+        <button class="data-toggle" onclick="
+          const b=document.getElementById('${id}');
+          const open=b.classList.toggle('open');
+          this.textContent=open?'▲ 收起':'▼ 展開';
+        ">▼ 展開</button>
+        <button class="data-copy" id="copy-${id}" onclick="
+          navigator.clipboard.writeText(_dataStore['${id}']).then(()=>{
+            const btn=document.getElementById('copy-${id}');
+            btn.textContent='✓ 已複製';
+            btn.classList.add('copied');
+            setTimeout(()=>{ btn.textContent='複製'; btn.classList.remove('copied'); }, 1500);
+          });
+        ">複製</button>
+      </div>
       <div class="data-body" id="${id}">
         <pre>${JSON.stringify(data, null, 2)}</pre>
       </div>`;
