@@ -11,6 +11,7 @@ _LINE_RE = re.compile(
     r"\s+(?P<rest>.+)$"
 )
 _DATA_PREFIX_RE = re.compile(r"\[data:\s*")
+_ANAL_RE = re.compile(r"\[anal:\s*(?P<val>[^\]]+)\]")
 _SCREENSHOTS_RE = re.compile(r"\[screenshots:\s*(?P<files>[^\]]+)\]")
 _SCREENSHOTS_READY_RE = re.compile(r"\[screenshots ready:\s*(?P<files>[^\]]+)\]")
 
@@ -64,6 +65,12 @@ def _parse_line(raw: str) -> Optional[Dict[str, Any]]:
 
     data_val, rest = _extract_json_block(rest, _DATA_PREFIX_RE)
 
+    anal_val: Optional[str] = None
+    anal_m = _ANAL_RE.search(rest)
+    if anal_m:
+        anal_val = anal_m.group("val").strip()
+        rest = _ANAL_RE.sub("", rest)
+
     screenshots: List[str] = []
     ss_m = _SCREENSHOTS_RE.search(rest)
     if ss_m:
@@ -77,6 +84,7 @@ def _parse_line(raw: str) -> Optional[Dict[str, Any]]:
         "type": "log",
         "tag": tag_str,
         "message": message,
+        "anal": anal_val,
         "data": data_val,
         "screenshots": screenshots,
     }

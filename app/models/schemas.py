@@ -6,6 +6,7 @@ from pydantic import BaseModel, field_validator
 
 class LogRequest(BaseModel):
     message: Optional[str] = None
+    anal: Optional[str] = None
     tag: Optional[str] = None
     timestamp: Optional[datetime] = None
     screenshot: bool = False

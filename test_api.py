@@ -24,6 +24,11 @@ def test_log_with_screenshot():
     print("=== 測試 2：附截圖 ===")
     resp = requests.post(f"{BASE}/api/log", json={
         "message": "截圖測試",
+        "data": {
+            "job_id": 123,
+            "status": "success",
+            "count": 42,
+        },
         "screenshot": True,
         "url": ["https://backend.kecoralwell312.com/ems/#/v2/monitorGroup?regionId=37"],
     }, timeout=120)
@@ -78,10 +83,10 @@ def test_log_with_data():
 
 
 if __name__ == "__main__":
-    test_log_only()
-    test_custom_timestamp()
-    test_screenshot_missing_url()
-    test_log_with_data()
+    # test_log_only()
+    # test_custom_timestamp()
+    # test_screenshot_missing_url()
+    # test_log_with_data()
     # 截圖測試需要 Playwright chromium，視需求開啟
     test_log_with_screenshot()
     print("所有測試通過")

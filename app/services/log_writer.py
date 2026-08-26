@@ -20,10 +20,11 @@ async def _lock_for(path: Path) -> asyncio.Lock:
 
 async def write_log(
     ts: datetime,
-    message: str,
+    message: Optional[str],
     screenshot_files: Optional[List[str]],
     data: Optional[Dict[str, Any]] = None,
     tag: Optional[str] = None,
+    anal: Optional[str] = None,
 ) -> Path:
     day_dir = LOG_DIR / bucket_day_dir(ts)
     day_dir.mkdir(parents=True, exist_ok=True)
@@ -34,6 +35,8 @@ async def write_log(
         line += f" [{tag}]"
     if message:
         line += f" {message}"
+    if anal:
+        line += f" [anal: {anal}]"
     if data:
         line += f" [data: {json.dumps(data, ensure_ascii=False)}]"
     if screenshot_files:

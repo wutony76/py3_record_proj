@@ -282,7 +282,7 @@
             <th>時間</th>
             <th>區間</th>
             <th>Tag</th>
-            <th>訊息</th>
+            <th>Anal</th>
             <th>Data</th>
             <th>截圖</th>
           </tr>
@@ -371,7 +371,7 @@
         <td class="time-cell">${e.time}</td>
         <td class="bucket-cell">${e.bucket}</td>
         <td class="tag-cell">${e.tag ? `<span class="tag-badge">${escHtml(e.tag)}</span>` : '—'}</td>
-        <td class="msg-cell">${escHtml(e.message || '')}</td>
+        <td class="msg-cell">${escHtml(e.anal || e.message || '')}</td>
         <td class="data-cell">${renderData(e.data)}</td>
         <td>${renderScreenshots(date, e.screenshots)}</td>
       </tr>
