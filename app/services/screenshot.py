@@ -20,7 +20,7 @@ async def start_browser() -> None:
     global _playwright, _browser, _semaphore
     _playwright = await async_playwright().start()
     _browser = await _playwright.chromium.launch(headless=True)
-    _semaphore = asyncio.Semaphore(1)
+    _semaphore = asyncio.Semaphore(2)
 
 
 async def stop_browser() -> None:
