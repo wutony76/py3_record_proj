@@ -244,6 +244,70 @@
       min-width: 140px;
     }
     .filter-count { font-size: 0.8rem; color: #888; margin-left: auto; }
+
+    /* 排除 Tag 多選下拉 */
+    .exclude-wrap { position: relative; }
+    .exclude-btn {
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid #dde1e7;
+      font-size: 0.85rem;
+      background: #f8f9fb;
+      color: #333;
+      cursor: pointer;
+      min-width: 140px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .exclude-btn.active { border-color: #f97316; background: #fff7ed; color: #c2410c; }
+    .exclude-panel {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      min-width: 180px;
+      background: #fff;
+      border: 1px solid #dde1e7;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+      z-index: 100;
+      padding: 6px 0;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .exclude-panel.open { display: block; }
+    .exclude-panel label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      font-size: 0.84rem;
+      cursor: pointer;
+      color: #333;
+      white-space: nowrap;
+    }
+    .exclude-panel label:hover { background: #f3f4f6; }
+    .exclude-panel input[type="checkbox"] { accent-color: #f97316; }
+    .exclude-panel .panel-actions {
+      display: flex;
+      gap: 8px;
+      padding: 6px 14px 2px;
+      border-top: 1px solid #f0f0f0;
+      margin-top: 4px;
+    }
+    .exclude-panel .panel-actions button {
+      font-size: 0.78rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid #dde1e7;
+      background: #f8f9fb;
+      cursor: pointer;
+      color: #555;
+    }
+    .exclude-panel .panel-actions button:hover { background: #e5e7eb; }
   </style>
 </head>
 <body>
@@ -271,6 +335,13 @@
   <select id="filterBucket" onchange="applyFilter()">
     <option value="">全部</option>
   </select>
+  <label>排除 Tag</label>
+  <div class="exclude-wrap" id="excludeWrap">
+    <button class="exclude-btn" id="excludeBtn" onclick="toggleExcludePanel(event)">
+      <span id="excludeLabel">無</span><span>▾</span>
+    </button>
+    <div class="exclude-panel" id="excludePanel"></div>
+  </div>
   <span class="filter-count" id="filterCount"></span>
 </div>
 
@@ -317,6 +388,28 @@
 
   function screenshotUrl(date, filename) {
     return `/data/screenshots/${date}/${filename}`;
+  }
+
+  let _excludedTags = new Set();
+
+  function toggleExcludePanel(e) {
+    e.stopPropagation();
+    document.getElementById('excludePanel').classList.toggle('open');
+  }
+  document.addEventListener('click', () => {
+    document.getElementById('excludePanel')?.classList.remove('open');
+  });
+
+  function updateExcludeBtn() {
+    const btn = document.getElementById('excludeBtn');
+    const label = document.getElementById('excludeLabel');
+    if (_excludedTags.size === 0) {
+      label.textContent = '無';
+      btn.classList.remove('active');
+    } else {
+      label.textContent = `排除 ${_excludedTags.size} 個`;
+      btn.classList.add('active');
+    }
   }
 
   let _dataId = 0;
@@ -405,6 +498,32 @@
     const curBucket = bucketSel.value;
     bucketSel.innerHTML = '<option value="">全部區間</option>' +
       buckets.map(b => `<option value="${escHtml(b)}" ${curBucket===b?'selected':''}>${escHtml(b)}</option>`).join('');
+
+    // 排除 Tag 多選面板
+    const panel = document.getElementById('excludePanel');
+    panel.innerHTML = tags.map(t => `
+      <label>
+        <input type="checkbox" value="${escHtml(t)}" ${_excludedTags.has(t)?'checked':''}
+          onchange="toggleExcludeTag(this.value, this.checked)">
+        ${escHtml(t)}
+      </label>`).join('') +
+      `<div class="panel-actions">
+        <button onclick="clearExclude()">清除</button>
+      </div>`;
+  }
+
+  function toggleExcludeTag(tag, checked) {
+    if (checked) _excludedTags.add(tag);
+    else _excludedTags.delete(tag);
+    updateExcludeBtn();
+    applyFilter();
+  }
+
+  function clearExclude() {
+    _excludedTags.clear();
+    updateExcludeBtn();
+    document.querySelectorAll('#excludePanel input[type="checkbox"]').forEach(cb => cb.checked = false);
+    applyFilter();
   }
 
   function applyFilter() {
@@ -413,6 +532,7 @@
     let filtered = [..._allEntries].reverse();
     if (tag) filtered = filtered.filter(e => e.tag === tag);
     if (bucket) filtered = filtered.filter(e => e.bucket === bucket);
+    if (_excludedTags.size > 0) filtered = filtered.filter(e => !_excludedTags.has(e.tag));
     document.getElementById('filterCount').textContent = `顯示 ${filtered.length} / ${_allEntries.length} 筆`;
     renderTable(_currentDate, filtered);
   }
