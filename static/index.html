@@ -221,6 +221,28 @@
     }
 
     #status { font-size: 0.8rem; color: #aaa; }
+
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 24px;
+      background: #fff;
+      border-bottom: 1px solid #e8eaed;
+      flex-wrap: wrap;
+    }
+    .filter-bar label { font-size: 0.85rem; color: #555; font-weight: 500; }
+    .filter-bar select {
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid #dde1e7;
+      font-size: 0.85rem;
+      background: #f8f9fb;
+      color: #333;
+      cursor: pointer;
+      min-width: 140px;
+    }
+    .filter-count { font-size: 0.8rem; color: #888; margin-left: auto; }
   </style>
 </head>
 <body>
@@ -238,6 +260,18 @@
     <span id="status"></span>
   </div>
 </header>
+
+<div class="filter-bar">
+  <label>Tag</label>
+  <select id="filterTag" onchange="applyFilter()">
+    <option value="">全部</option>
+  </select>
+  <label>區間</label>
+  <select id="filterBucket" onchange="applyFilter()">
+    <option value="">全部</option>
+  </select>
+  <span class="filter-count" id="filterCount"></span>
+</div>
 
 <main>
   <div class="summary" id="summary"></div>
@@ -267,6 +301,8 @@
 <script>
   const API = '';
   let autoTimer = null;
+  let _allEntries = [];
+  let _currentDate = '';
 
   async function fetchDates() {
     const r = await fetch(`${API}/api/logs/dates`);
@@ -353,15 +389,42 @@
     `;
   }
 
+  function populateFilters(entries) {
+    const tags = [...new Set(entries.map(e => e.tag).filter(Boolean))].sort();
+    const buckets = [...new Set(entries.map(e => e.bucket))].sort();
+
+    const tagSel = document.getElementById('filterTag');
+    const curTag = tagSel.value;
+    tagSel.innerHTML = '<option value="">全部 Tag</option>' +
+      tags.map(t => `<option value="${escHtml(t)}" ${curTag===t?'selected':''}>${escHtml(t)}</option>`).join('');
+
+    const bucketSel = document.getElementById('filterBucket');
+    const curBucket = bucketSel.value;
+    bucketSel.innerHTML = '<option value="">全部區間</option>' +
+      buckets.map(b => `<option value="${escHtml(b)}" ${curBucket===b?'selected':''}>${escHtml(b)}</option>`).join('');
+  }
+
+  function applyFilter() {
+    const tag = document.getElementById('filterTag').value;
+    const bucket = document.getElementById('filterBucket').value;
+    let filtered = [..._allEntries].reverse();
+    if (tag) filtered = filtered.filter(e => e.tag === tag);
+    if (bucket) filtered = filtered.filter(e => e.bucket === bucket);
+    document.getElementById('filterCount').textContent = `顯示 ${filtered.length} / ${_allEntries.length} 筆`;
+    renderTable(_currentDate, filtered);
+  }
+
   async function loadLogs() {
     const date = document.getElementById('datePicker').value;
     if (!date) return;
     document.getElementById('status').textContent = '載入中…';
     try {
       const { entries } = await fetchLogs(date);
-      const sorted = [...entries].reverse();
+      _allEntries = entries;
+      _currentDate = date;
       renderSummary(entries);
-      renderTable(date, sorted);
+      populateFilters(entries);
+      applyFilter();
       document.getElementById('status').textContent = `更新於 ${new Date().toLocaleTimeString()}`;
     } catch {
       document.getElementById('status').textContent = '載入失敗';
