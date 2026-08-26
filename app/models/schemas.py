@@ -20,6 +20,17 @@ class LogRequest(BaseModel):
             return [v]
         return v
 
+    @field_validator("anal", mode="before")
+    @classmethod
+    def normalize_anal(cls, v: Any) -> Any:
+        if v is None:
+            return v
+        if isinstance(v, str):
+            return v
+        # 非字串（如 list、dict）轉為 JSON 字串
+        import json
+        return json.dumps(v, ensure_ascii=False)
+
 
 class LogResponse(BaseModel):
     status: str
