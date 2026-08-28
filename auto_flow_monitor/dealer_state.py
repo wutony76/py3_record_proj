@@ -25,6 +25,7 @@ from .dealer_status import compute_dealer_status
 from .dev_log import DevLogger
 from .duty_client import DutyClient
 from .id_check_client import IdCheckClient
+from .js_compat import safe_get
 from .logging_setup import log
 from .time_utils import now_ms, parse_worktime
 
@@ -91,7 +92,7 @@ class DealerFlowState:
 
         _data = next(
             (d for d in data_list
-             if d.get("regionInfo", {}).get("regionId") == self.region_id),
+             if isinstance(d, dict) and safe_get(d.get("regionInfo"), "regionId") == self.region_id),
             None,
         )
         if not _data:
@@ -110,7 +111,7 @@ class DealerFlowState:
             self.info[login_id] = item
             self.derived_status[login_id] = compute_dealer_status(item)
 
-            work_time = (item.get("nextWorkInfo") or {}).get("workTime")
+            work_time = safe_get(item.get("nextWorkInfo"), "workTime")
 
             old_work_time = self.work_time_raw.get(login_id)
             if (

@@ -110,6 +110,9 @@ class AutoFlowMonitor:
                             msg = json.loads(raw)
                         except json.JSONDecodeError:
                             continue
+                        if not isinstance(msg, dict):
+                            log.debug(f"收到非物件格式的封包，略過: {raw[:200]!r}")
+                            continue
                         ws_code = msg.get("wsCode", "")
                         if ws_code in ("ws_100002", "ws_100003"):
                             log.debug(f"收到封包 wsCode={ws_code}")
