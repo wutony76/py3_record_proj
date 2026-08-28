@@ -9,7 +9,9 @@ import ssl
 import websockets
 
 from .config import Settings
+from .dealer_state import DealerFlowState
 from .dev_log import DevLogger
+from .duty_client import DutyClient
 from .id_check_client import IdCheckClient
 from .logging_setup import log
 from .signing import make_req_id
@@ -48,6 +50,31 @@ class AutoFlowMonitor:
             retry_backoff_s=self.settings.retry_backoff_s,
         )
 
+        if not self.settings.ems_token:
+            log.warning(
+                "ems_token 未設定（見 auto_flow_monitor/secrets_local.py），"
+                "荷官打卡（onDutyConfirm）會全部失敗"
+            )
+        duty_client = DutyClient(
+            api_base=self.settings.api_base,
+            secret=self.settings.duty_secret,
+            cmd=self.settings.duty_cmd,
+            token=self.settings.ems_token,
+            timeout=self.settings.duty_timeout_s,
+        )
+        self.dealer_state = DealerFlowState(
+            region_id=region_id,
+            id_check_client=id_check_client,
+            duty_client=duty_client,
+            dev_logger=dev_logger,
+            ready_status=self.settings.dealer_ready_status,
+            trigger_before_work_s=self.settings.dealer_trigger_before_work_s,
+            overdue_after_work_s=self.settings.dealer_overdue_after_work_s,
+            duty_window_s=self.settings.duty_window_s,
+            max_id_check_retry=self.settings.max_id_check_retry,
+            retry_backoff_s=self.settings.retry_backoff_s,
+        )
+
     async def _tick_loop(self) -> None:
         while True:
             try:
@@ -56,8 +83,17 @@ class AutoFlowMonitor:
                 log.exception("tick() 發生未預期例外，略過本次繼續監控")
             await asyncio.sleep(self.settings.tick_interval_s)
 
+    async def _dealer_tick_loop(self) -> None:
+        while True:
+            try:
+                await self.dealer_state.tick()
+            except Exception:
+                log.exception("dealer tick() 發生未預期例外，略過本次繼續監控")
+            await asyncio.sleep(self.settings.tick_interval_s)
+
     async def run(self) -> None:
         asyncio.create_task(self._tick_loop())
+        asyncio.create_task(self._dealer_tick_loop())
 
         while True:
             try:
@@ -78,6 +114,9 @@ class AutoFlowMonitor:
                         if ws_code in ("ws_100002", "ws_100003"):
                             log.debug(f"收到封包 wsCode={ws_code}")
                             self.state.on_ws_packet(msg)
+                        elif ws_code == "ws_100001":
+                            log.debug(f"收到封包 wsCode={ws_code}")
+                            self.dealer_state.on_ws_packet(msg)
 
             except Exception as e:
                 log.warning(f"WebSocket 斷線: {e}，{self.settings.reconnect_delay_s}s 後重連")
