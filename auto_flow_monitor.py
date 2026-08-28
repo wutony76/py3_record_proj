@@ -136,8 +136,6 @@ def id_check(login_id: str) -> dict:
     code = envelope.get("code")
     msg  = envelope.get("message", "")
     data = envelope.get("data") or {}
-    print(f"  ← code   : {code}  msg: {msg}")
-    print(f"  ← data   : {json.dumps(data, ensure_ascii=False)}")
     if not envelope or code != 0:
         dev_log(
             tag="py3-monitor",
