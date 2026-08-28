@@ -398,7 +398,6 @@
   }
 
   let _excludedTags = new Set();
-  let _selectedBuckets = new Set(); // 空 = 全部顯示
 
   // ── 顯示區間多選 ──────────────────────────────────
   function toggleBucketPanel(e) {
@@ -406,41 +405,43 @@
     document.getElementById('bucketPickPanel').classList.toggle('open');
   }
 
-  function updateBucketPickBtn(allBuckets) {
+  function _checkedBuckets() {
+    return [...document.querySelectorAll('#bucketPickPanel input[type="checkbox"]:checked')]
+      .map(cb => cb.value);
+  }
+
+  function _totalBuckets() {
+    return document.querySelectorAll('#bucketPickPanel input[type="checkbox"]').length;
+  }
+
+  function updateBucketPickBtn() {
     const btn = document.getElementById('bucketPickBtn');
     const label = document.getElementById('bucketPickLabel');
-    if (_selectedBuckets.size === 0 || _selectedBuckets.size === allBuckets.length) {
+    const checked = _checkedBuckets().length;
+    const total = _totalBuckets();
+    if (checked === total || checked === 0) {
       label.textContent = '全部';
       btn.classList.remove('active');
     } else {
-      label.textContent = `已選 ${_selectedBuckets.size} 個`;
+      label.textContent = `已選 ${checked} 個`;
       btn.classList.add('active');
     }
   }
 
-  function toggleBucketPick(bucket, checked, allBuckets) {
-    if (checked) _selectedBuckets.add(bucket);
-    else _selectedBuckets.delete(bucket);
-    updateBucketPickBtn(allBuckets);
+  function toggleBucketPick() {
+    updateBucketPickBtn();
     applyFilter();
   }
 
-  function selectAllBuckets(allBuckets) {
-    _selectedBuckets.clear();
+  function selectAllBuckets() {
     document.querySelectorAll('#bucketPickPanel input[type="checkbox"]').forEach(cb => cb.checked = true);
-    updateBucketPickBtn(allBuckets);
+    updateBucketPickBtn();
     applyFilter();
   }
 
-  function clearBuckets(allBuckets) {
-    _selectedBuckets = new Set(allBuckets);
-    document.querySelectorAll('#bucketPickPanel input[type="checkbox"]').forEach(cb => {
-      cb.checked = false;
-      _selectedBuckets.add(cb.value);
-    });
-    // 全選等於不過濾，清空 set
-    _selectedBuckets.clear();
-    updateBucketPickBtn(allBuckets);
+  function clearBuckets() {
+    document.querySelectorAll('#bucketPickPanel input[type="checkbox"]').forEach(cb => cb.checked = false);
+    updateBucketPickBtn();
     applyFilter();
   }
 
@@ -557,16 +558,15 @@
     const bucketPanel = document.getElementById('bucketPickPanel');
     bucketPanel.innerHTML = buckets.map(b => `
       <label>
-        <input type="checkbox" value="${escHtml(b)}"
-          ${_selectedBuckets.size === 0 || _selectedBuckets.has(b) ? 'checked' : ''}
-          onchange="toggleBucketPick(this.value, this.checked, ${JSON.stringify(buckets)})">
+        <input type="checkbox" value="${escHtml(b)}" checked
+          onchange="toggleBucketPick()">
         ${escHtml(b)}
       </label>`).join('') +
       `<div class="panel-actions">
-        <button onclick="selectAllBuckets(${JSON.stringify(buckets)})">全選</button>
-        <button onclick="clearBuckets(${JSON.stringify(buckets)})">清除</button>
+        <button onclick="selectAllBuckets()">全選</button>
+        <button onclick="clearBuckets()">清除</button>
       </div>`;
-    updateBucketPickBtn(buckets);
+    updateBucketPickBtn();
 
     // 排除 Tag 多選面板
     const panel = document.getElementById('excludePanel');
@@ -599,7 +599,12 @@
     const tag = document.getElementById('filterTag').value;
     const bucket = document.getElementById('filterBucket').value;
     let filtered = [..._allEntries].reverse();
-    if (_selectedBuckets.size > 0) filtered = filtered.filter(e => _selectedBuckets.has(e.bucket));
+    const checkedBuckets = _checkedBuckets();
+    const totalBuckets = _totalBuckets();
+    if (totalBuckets > 0 && checkedBuckets.length < totalBuckets) {
+      const checkedSet = new Set(checkedBuckets);
+      filtered = filtered.filter(e => checkedSet.has(e.bucket));
+    }
     if (tag) filtered = filtered.filter(e => e.tag === tag);
     if (bucket) filtered = filtered.filter(e => e.bucket === bucket);
     if (_excludedTags.size > 0) filtered = filtered.filter(e => !_excludedTags.has(e.tag));
