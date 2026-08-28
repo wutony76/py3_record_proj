@@ -41,5 +41,7 @@ class Settings:
     duty_timeout_s: float = 10
     dealer_ready_status: frozenset = field(default_factory=lambda: frozenset({1}))
     dealer_trigger_before_work_s: int = 3 * 60    # 荷官上崗前幾秒觸發第一次 idCheck（進門）
+    dealer_confirm_before_work_s: int = 90        # 荷官上崗前幾秒觸發第二次 idCheck（確認進門）
     dealer_overdue_after_work_s: int = 5 * 60     # 進門成功時已逾上崗時間超過此秒數，視為過期、不再確認進門
-    duty_window_s: int = 60                        # 上崗時間後幾秒內要完成打卡，超過就放棄
+    duty_min_delay_s: int = 30    # 上崗時間後至少要過幾秒才能打卡（太早不打）
+    duty_max_delay_s: int = 240   # 上崗時間後超過幾秒還沒打到卡就放棄（太晚不補打）

@@ -69,8 +69,10 @@ class AutoFlowMonitor:
             dev_logger=dev_logger,
             ready_status=self.settings.dealer_ready_status,
             trigger_before_work_s=self.settings.dealer_trigger_before_work_s,
+            confirm_before_work_s=self.settings.dealer_confirm_before_work_s,
             overdue_after_work_s=self.settings.dealer_overdue_after_work_s,
-            duty_window_s=self.settings.duty_window_s,
+            duty_min_delay_s=self.settings.duty_min_delay_s,
+            duty_max_delay_s=self.settings.duty_max_delay_s,
             max_id_check_retry=self.settings.max_id_check_retry,
             retry_backoff_s=self.settings.retry_backoff_s,
         )
