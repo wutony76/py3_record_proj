@@ -120,7 +120,7 @@ def id_check(login_id: str) -> dict:
     log.info(f"POST {url}")
     log.info(f"  payload: {json.dumps(payload, ensure_ascii=False)}")
     dev_log(
-        tag="auto-flow-monitor",
+        tag="py3-monitor",
         anal=f"發起 idCheck: {login_id}",
         data={"loginId": login_id, "ts": ts, "reqId": req_id},
     )
@@ -136,7 +136,7 @@ def id_check(login_id: str) -> dict:
     log.info(f"  response: {json.dumps(envelope, ensure_ascii=False)}")
     if not envelope or envelope.get("code") != 0:
         dev_log(
-            tag="auto-flow-monitor",
+            tag="py3-monitor",
             anal=f"idCheck 失敗: {login_id}",
             data={"loginId": login_id, "code": envelope.get("code"), "message": envelope.get("message")},
         )
@@ -244,14 +244,14 @@ class AutoFlowState:
             self.desk[login_id] = self.data_time
             log.info(f"✓ idCheck 成功: {login_id}  target={result.get('target')}")
             dev_log(
-                tag="auto-flow-monitor",
+                tag="py3-monitor",
                 anal=f"✓ 刷門成功: {login_id}",
                 data={"loginId": login_id, "target": result.get("target"), "dataTime": self.data_time, **result},
             )
         except Exception as err:
             log.warning(f"✗ idCheck 失敗: {login_id}  err={err}")
             dev_log(
-                tag="auto-flow-monitor",
+                tag="py3-monitor",
                 anal=f"✗ 刷門失敗: {login_id}",
                 data={"loginId": login_id, "error": str(err), "dataTime": self.data_time},
             )
