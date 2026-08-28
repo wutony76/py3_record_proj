@@ -36,6 +36,7 @@ class AutoFlowState:
         self.desk: dict[str, str] = {}         # 已成功刷門的 loginId → dataTime
         self.info: dict[str, dict] = {}        # loginId → empInfoList item
         self.derived_status: dict[str, int] = {}  # loginId → 轉換後 status（見 status.compute_status）
+        self.work_time_raw: dict[str, str] = {}  # loginId → 原始 nextWorkInfo.workTime 字串
         self.trigger_ts: dict[str, float] = {}  # loginId → 觸發時間 (ms)，收到封包時算好快取
         self.retry_count: dict[str, int] = {}  # 本 dataTime 內失敗重試次數
         self.next_retry_at: dict[str, float] = {}  # 本 dataTime 內下次可重試時間 (ms)
@@ -90,6 +91,23 @@ class AutoFlowState:
             self.derived_status[login_id] = compute_status(item)
 
             work_time = (item.get("nextWorkInfo") or {}).get("workTime")
+
+            old_work_time = self.work_time_raw.get(login_id)
+            if (
+                work_time and old_work_time and work_time != old_work_time
+                and login_id in self.ready_list
+                and login_id not in self.desk
+            ):
+                log.warning(
+                    f"⚠ {login_id} 尚未觸發進門，workTime 已從 {old_work_time} 變成 {work_time}，"
+                    "舊班次可能被錯過"
+                )
+
+            if work_time:
+                self.work_time_raw[login_id] = work_time
+            else:
+                self.work_time_raw.pop(login_id, None)
+
             parsed = parse_worktime(work_time)
             if parsed is not None:
                 self.trigger_ts[login_id] = parsed - self.trigger_before_work_s * 1000
@@ -126,7 +144,7 @@ class AutoFlowState:
         now = now_ms()
         pending = [
             lid for lid in self.ready_list
-            if lid not in self.desk
+            if self.desk.get(lid) != self.data_time  # 只排除「這一批」已成功的，換批後可再次觸發
             and lid not in self.giveup
             and now >= self.next_retry_at.get(lid, 0)
         ]

@@ -111,6 +111,20 @@ class DealerFlowState:
             self.derived_status[login_id] = compute_dealer_status(item)
 
             work_time = (item.get("nextWorkInfo") or {}).get("workTime")
+
+            old_work_time = self.work_time_raw.get(login_id)
+            if (
+                work_time and old_work_time and work_time != old_work_time
+                and login_id in self.ready_list
+                and login_id not in self.awaiting_confirm
+                and login_id not in self.desk
+                and self.done_for_work_time.get(login_id) != old_work_time
+            ):
+                log.warning(
+                    f"[dealer] ⚠ {login_id} 尚未進門，workTime 已從 {old_work_time} 變成 {work_time}，"
+                    "舊班次可能被錯過"
+                )
+
             if work_time:
                 self.work_time_raw[login_id] = work_time
                 parsed = parse_worktime(work_time)
