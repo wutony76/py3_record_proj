@@ -117,13 +117,16 @@ def id_check(login_id: str) -> dict:
         "ts": ts,
     }
     url = f"{API_BASE}/{ID_CHECK_CMD}"
-    log.info(f"POST {url}")
-    log.info(f"  payload: {json.dumps(payload, ensure_ascii=False)}")
     dev_log(
         tag="py3-monitor",
         anal=f"發起 idCheck: {login_id}",
         data={"loginId": login_id, "ts": ts, "reqId": req_id},
     )
+    print(f"\n{'─'*50}")
+    print(f"  [idCheck] → POST {url}")
+    print(f"  loginId  : {login_id}")
+    print(f"  reqId    : {req_id}")
+    print(f"  ts       : {ts}")
     resp = requests.post(
         url,
         json=payload,
@@ -133,15 +136,20 @@ def id_check(login_id: str) -> dict:
     )
     resp.raise_for_status()
     envelope = resp.json()
-    log.info(f"  response: {json.dumps(envelope, ensure_ascii=False)}")
-    if not envelope or envelope.get("code") != 0:
+    code = envelope.get("code")
+    msg  = envelope.get("message", "")
+    data = envelope.get("data") or {}
+    print(f"  ← code   : {code}  msg: {msg}")
+    print(f"  ← data   : {json.dumps(data, ensure_ascii=False)}")
+    print(f"{'─'*50}\n")
+    if not envelope or code != 0:
         dev_log(
             tag="py3-monitor",
             anal=f"idCheck 失敗: {login_id}",
-            data={"loginId": login_id, "code": envelope.get("code"), "message": envelope.get("message")},
+            data={"loginId": login_id, "code": code, "message": msg},
         )
-        raise RuntimeError(f"idCheck 失敗: code={envelope.get('code')} msg={envelope.get('message')}")
-    return envelope.get("data", {})
+        raise RuntimeError(f"idCheck 失敗: code={code} msg={msg}")
+    return data
 
 
 # ─── 核心狀態機 ─────────────────────────────────────────
