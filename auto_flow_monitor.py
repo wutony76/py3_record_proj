@@ -122,11 +122,8 @@ def id_check(login_id: str) -> dict:
         anal=f"發起 idCheck: {login_id}",
         data={"loginId": login_id, "ts": ts, "reqId": req_id},
     )
-    print(f"\n{'─'*50}")
-    print(f"  [idCheck] → POST {url}")
+    print(f"[idCheck] → POST {url}")
     print(f"  loginId  : {login_id}")
-    print(f"  reqId    : {req_id}")
-    print(f"  ts       : {ts}")
     resp = requests.post(
         url,
         json=payload,
@@ -141,7 +138,6 @@ def id_check(login_id: str) -> dict:
     data = envelope.get("data") or {}
     print(f"  ← code   : {code}  msg: {msg}")
     print(f"  ← data   : {json.dumps(data, ensure_ascii=False)}")
-    print(f"{'─'*50}\n")
     if not envelope or code != 0:
         dev_log(
             tag="py3-monitor",
